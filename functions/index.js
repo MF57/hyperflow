@@ -1,16 +1,18 @@
 var fsp = require('./fileSplitter.js'), 
     cmd = require('./command.js'),
     amqpCmd = require('./amqpCommand.js'),
+    gcfCmd = require('./gcfCommand.js'),
+    awsLambdaCmd = require('./awsLambdaCommand.js'),
     scanDir = require('./DirScanner').scanDir;
 
 function print(ins, outs, config, cb) {
     //console.log("PRINT", JSON.stringify(ins));
         ins.forEach(function(input) {
                 //console.log("sigId=", input.sigId + ":", input.data[0])
-		//console.log(JSON.stringify(input, null, 2));
-		if (input.data && input.data[0].value) {
+        //console.log(JSON.stringify(input, null, 2));
+        if (input.data && input.data[0].value) {
                     console.log(input.data[0].value);
-		} else {
+        } else {
                     console.log(JSON.stringify(input, null, 2));
                 }
         });
@@ -106,13 +108,13 @@ function chooseEvenOdd(ins, outs, config, cb) {
             sum += parseInt(ins[i].data[0].value);
         }
     }
-	if (sum % 2 == 0) {
-		outs[0].data = [ { "value": sum } ];
-		outs[0].condition = "true";
-	} else {
-		outs[1].data = [ { "value": sum } ];
-		outs[1].condition = "true";
-	}
+    if (sum % 2 == 0) {
+        outs[0].data = [ { "value": sum } ];
+        outs[0].condition = "true";
+    } else {
+        outs[1].data = [ { "value": sum } ];
+        outs[1].condition = "true";
+    }
     cb(null, outs);
 }
 
@@ -213,6 +215,8 @@ exports.amqpCommand = amqpCmd.amqpCommand;
 exports.exit = exit;
 exports.command_print = cmd.command_print;
 exports.command_notifyevents = cmd.command_notifyevents;
+exports.gcfCommand = gcfCmd.gcfCommand;
+exports.awsLambdaCommand = awsLambdaCmd.awsLambdaCommand;
 exports.scanDirForJs = scanDirForJs;
 exports.grepFile = grepFile;
 exports.chooseEvenOdd = chooseEvenOdd;

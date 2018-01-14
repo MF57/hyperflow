@@ -9,6 +9,7 @@
     "hflow-convert-dax": "./bin/hflow-convert-dax"
   },
   "dependencies": {
+    "aws-sdk": "^2.157.0",
     "express": "3.x",
     "consolidate": "0.10.x",
     "cradle": "0.6.6",
@@ -24,6 +25,7 @@
     "eventemitter2": "",
     "optimist": "0.6.0",
     "walkdir": "0.0.7",
+    "requestretry": "",
     "path": "0.4.9",
     "z-schema": "2.0.x",
     "walk": "2.x",

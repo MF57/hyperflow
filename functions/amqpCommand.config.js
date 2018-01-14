@@ -1,9 +1,18 @@
+// var AMQP_URL  = process.env.AMQP_URL ? process.env.AMQP_URL : "amqp://localhost:5672";
+// var WORKDIR   = process.env.WORKDIR;
+// var S3_BUCKET = process.env.S3_BUCKET;
+// var S3_PATH   = process.env.S3_PATH;
+
+// exports.amqp_url = AMQP_URL;
+
 var AMQP_URL  = process.env.AMQP_URL ? process.env.AMQP_URL : "amqp://localhost:5672";
-var WORKDIR   = process.env.WORKDIR;
-var S3_BUCKET = process.env.S3_BUCKET;
-var S3_PATH   = process.env.S3_PATH;
 
 exports.amqp_url = AMQP_URL;
+
+exports.options = {
+    "storage": "local",
+    "workdir": "/Users/mf57/Desktop/Studia/Magisterka/Montage/data/0.25/input", // Remember to adjust path here
+};
 
 // S3 storage
 // exports.options = {
@@ -12,10 +21,10 @@ exports.amqp_url = AMQP_URL;
 //     "prefix": S3_PATH
 // };
 
-exports.options = {
-    "storage": "local",
-    "workdir": WORKDIR
-};
+// exports.options = {
+//     "storage": "local",
+//     "workdir": WORKDIR
+// };
 
 
 // NFS storage
