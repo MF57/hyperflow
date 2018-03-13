@@ -2,4 +2,5 @@ node_modules/
 coverage/
 *~
 *.swp
+*.config.js
 .idea

@@ -2,7 +2,7 @@ var uuid  = require('uuid');
 var when  = require('when');
 var defer = when.defer;
 var amqplib = require('amqplib');
-var executor_config = require('./amqpCommand.config.js');
+var executor_config = require('./config/amqpCommand.config.js');
 
 var identity = function(e) {return e};
 
