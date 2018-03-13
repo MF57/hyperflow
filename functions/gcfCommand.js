@@ -1,17 +1,28 @@
 const request = require('requestretry');
 const executor_config = require('./config/gcfCommand.config.js');
-const identity = function (e) {
-    return e
-};
 
+function gcfCommand(ins, outs, config, hyperflow_callback) {
 
-function gcfCommand(ins, outs, config, cb) {
+    function responseCallback(error, response, body) {
+        console.log("Function: " + executable + " status: " + response.statusCode);
+
+        if (error) {
+            console.log("Function: " + executable + " error: " + error);
+            hyperflow_callback(error, outs);
+            return
+        }
+        if (response) {
+            console.log("Function: " + executable + " response status code: " + response.statusCode + " number of request attempts: " + response.attempts)
+        }
+        console.log("Function: " + executable + " data: " + body.toString());
+        hyperflow_callback(null, outs);
+    }
 
     const options = executor_config.options;
-    if(config.executor.hasOwnProperty('options')) {
+    if (config.executor.hasOwnProperty('options')) {
         const executorOptions = config.executor.options;
         for (const opt in executorOptions) {
-            if(executorOptions.hasOwnProperty(opt)) {
+            if (executorOptions.hasOwnProperty(opt)) {
                 options[opt] = executorOptions[opt];
             }
         }
@@ -21,39 +32,20 @@ function gcfCommand(ins, outs, config, cb) {
         "executable": executable,
         "args": config.executor.args,
         "env": (config.executor.env || {}),
-        "inputs": ins.map(identity),
-        "outputs": outs.map(identity),
+        "inputs": ins,
+        "outputs": outs,
         "options": options
     };
 
     console.log("Executing:  " + JSON.stringify(jobMessage));
 
-    const url = executor_config.gcf_url;
-
-    function optionalCallback(err, response, body) {
-        if (err) {
-            console.log("Function: " + executable + " error: " + err);
-            cb(err, outs);
-            return
-        }
-        if (response) {
-             console.log("Function: " + executable + " response status code: " + response.statusCode + " number of request attempts: " + response.attempts)
-        }
-        console.log("Function: " + executable + " data: " + body.toString());
-        cb(null, outs);
-    }
-
-
-    request.post(
-        {
-            timeout: 600000,
-            url: url,
-            json: jobMessage,
-            headers: {'Content-Type': 'application/json', 'Accept': '*/*'}
-        }, optionalCallback);
-
-
+    const requestBody = {
+        timeout: 600000,
+        url: executor_config.function_trigger_url,
+        json: jobMessage,
+        headers: {'Content-Type': 'application/json', 'Accept': '*/*'}
+    };
+    request.post(requestBody, responseCallback);
 }
-
 
 exports.gcfCommand = gcfCommand;

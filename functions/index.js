@@ -1,4 +1,4 @@
-var fsp = require('./fileSplitter.js'), 
+const fsp = require('./fileSplitter.js'),
     cmd = require('./command.js'),
     amqpCmd = require('./amqpCommand.js'),
     gcfCmd = require('./gcfCommand.js'),
