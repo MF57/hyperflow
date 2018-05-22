@@ -77,7 +77,7 @@ function amqpCommand(ins, outs, config, cb) {
             ok = ok.then(function (queue) {
                 taskCount += 1;
                 console.log("[AMQP][" + corrId + "][" + taskCount + "] Publishing job " + JSON.stringify(jobMessage));
-                ch.sendToQueue('hyperflow.jobs', new Buffer(JSON.stringify(jobMessage)), {
+                ch.sendToQueue('hyperflow.jobs', Buffer.from(JSON.stringify(jobMessage)), {
                     replyTo: queue,
                     contentType: 'application/json',
                     correlationId: corrId
