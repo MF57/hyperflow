@@ -44,10 +44,10 @@ function gcfCommand(ins, outs, config, hyperflow_callback) {
         console.log("Executing: " + executable);
     }
 
-    function myRetryStrategy(err, response, body){
+    function myRetryStrategy(err, response){
         // retry the request if we had an error or if the response was a 'Bad Gateway'
         if (response && response.statusCode && response.statusCode !== 200) {
-            console.log(executable + " - " + response.statusCode + " - " + response.body.message);
+            console.log(executable + " - " + response.statusCode + " - " + response.body);
         }
         return err || !response || response.statusCode !== 200;
     }

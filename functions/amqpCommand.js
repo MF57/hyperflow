@@ -67,21 +67,15 @@ function amqpCommand(ins, outs, config, cb) {
 
             if (!!config.deploymentType && options.vmDeploymentTypes.includes(config.deploymentType)
                 && connectionWrapper.url === executor_config.vm_amqp_url) {
-                console.log("VM DEPLOYMENT TYPE");
+                // console.log("VM DEPLOYMENT TYPE");
             } else if ((!!config.deploymentType && options.lambdaDeploymentTypes.includes(config.deploymentType)
                 && connectionWrapper.url === executor_config.amqp_url) || !config.deploymentType) {
                 // process normally
-                console.log("LAMBDA DEPLOYMENT TYPE");
+                // console.log("LAMBDA DEPLOYMENT TYPE");
             } else if (!config.deploymentType && connectionWrapper.url === executor_config.vm_amqp_url) {
-                console.log("VM DEPLOYMENT TYPE");
+                // console.log("VM DEPLOYMENT TYPE");
             } else {
                 return;
-            }
-
-            if (connectionWrapper.url === executor_config.amqp_url) {
-                console.log("LAMBDA CONNECTION")
-            } else {
-                console.log("VN CONNECTION")
             }
 
             const jobMessage = {
@@ -90,7 +84,8 @@ function amqpCommand(ins, outs, config, cb) {
                 "env": (config.executor.env || {}),
                 "inputs": ins.map(identity),
                 "outputs": outs.map(identity),
-                "options": options
+                "options": options,
+                "verbose": executor_config.options.verbose
             };
 
             const answer = defer();
@@ -116,7 +111,11 @@ function amqpCommand(ins, outs, config, cb) {
 
             ok = ok.then(function (queue) {
                 taskCount += 1;
-                //  console.log("[AMQP][" + corrId + "][" + taskCount + "] Publishing job " + JSON.stringify(jobMessage));
+                if (executor_config.options.verbose) {
+                    console.log("[AMQP][" + corrId + "][" + taskCount + "] Publishing job " + JSON.stringify(jobMessage));
+                } else {
+                    console.log("[AMQP][" + corrId + "] Publishing job " + config.executor.executable);
+                }
                 ch.sendToQueue('hyperflow.jobs', Buffer.from(JSON.stringify(jobMessage)), {
                     replyTo: queue,
                     contentType: 'application/json',
@@ -128,19 +127,18 @@ function amqpCommand(ins, outs, config, cb) {
             return ok.then(function (message) {
                 const parsed = JSON.parse(message);
                 ch.close();
-                //   if (parsed.exit_status === "0") {
-                // console.log("[AMQP][" + corrId + "] Job finished! job[" + JSON.stringify(jobMessage) + "] msg[" + message + "]", outs);
-                cb(null, outs);
-                //    } else {
-                if (JSON.stringify(jobMessage).executable === "mJPEG") {
-                    const end = Date.now();
-                    console.log("END: " + end);
-                    console.log(queueName);
+                if (parsed.exit_status === 0) {
+                    if (executor_config.options.verbose) {
+                        console.log("[AMQP][" + corrId + "] Job finished! job[" + JSON.stringify(jobMessage) + "] msg[" + message + "]", outs);
+                    } else {
+                        console.log("[AMQP][" + corrId + "] Successfully finished job " + config.executor.executable);
+                    }
+                    cb(null, outs);
+                } else {
+                    console.log("[AMQP][" + corrId + "] Error during job execution! exception[" + parsed.error + "]");
+                    cb(parsed.error, outs);
+                    process.exit(5);
                 }
-                //   console.log("[AMQP][" + corrId + "] Error during job execution! msg[" + JSON.stringify(jobMessage) + "] job[" + message + "] exception[" + parsed.exceptions + "]");
-                // process.exit(5);
-                //  cb(parsed.exceptions, outs);
-                // }
             });
         }))
     };

@@ -8,7 +8,7 @@ function awsLambdaCommand(ins, outs, config, hyperflow_callback) {
 
         if (error || response.statusCode !== 200) {
             console.log("Function: " + executable + " error: " + error);
-            console.log(response.body);
+            console.log(response.body.message);
             hyperflow_callback(error, outs);
             return
         }
@@ -44,10 +44,11 @@ function awsLambdaCommand(ins, outs, config, hyperflow_callback) {
         console.log("Executing: " + executable);
     }
 
-    function myRetryStrategy(err, response, body){
+    function myRetryStrategy(err, response){
         // retry the request if we had an error or if the response was a 'Bad Gateway'
         if (response && response.statusCode && response.statusCode !== 200) {
             console.log(executable + " - " + response.statusCode + " - " + response.body.message);
+
         }
         return err || !response || response.statusCode !== 200;
     }
