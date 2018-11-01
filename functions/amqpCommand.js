@@ -10,12 +10,30 @@ const identity = function (e) {
 
 
 let connection = null;
+let vmConnection = null;
 
-function connect() {
-    connection = amqplib.connect(executor_config.amqp_url);
-    console.log("[AMQP] Starting connection to " + executor_config.amqp_url);
+function connect(url) {
+    connection = amqplib.connect(url);
+    console.log("[AMQP] Starting connection to " + url);
 
     connection.then(function (conn) {
+        console.log("[AMQP] Connected!");
+
+        return when(conn.createChannel().then(function (ch) {
+            ch.assertQueue('hyperflow.jobs', {durable: true}).then(function (qok) {
+                return qok.queue;
+            });
+        }));
+    }, function (err) {
+        console.error('[AMQP] Connect failed: %s', err);
+    })
+}
+
+function vmConnect(url) {
+    vmConnection = amqplib.connect(url);
+    console.log("[AMQP] Starting connection to " + url);
+
+    vmConnection.then(function (conn) {
         console.log("[AMQP] Connected!");
 
         return when(conn.createChannel().then(function (ch) {
@@ -31,10 +49,11 @@ function connect() {
 let taskCount = 0;
 
 function amqpCommand(ins, outs, config, cb) {
-    if (!connection) connect();
+    if (!connection) connect(executor_config.amqp_url);
+    if (!vmConnection && !!executor_config.vm_amqp_url) vmConnect(executor_config.vm_amqp_url);
 
-    connection.then(function (connection) {
-        return when(connection.createChannel().then(function (ch) {
+    let onFulfilled = function (connectionWrapper) {
+        return when(connectionWrapper.conn.createChannel().then(function (ch) {
             const options = executor_config.options;
             if (config.executor.hasOwnProperty('options')) {
                 const executorOptions = config.executor.options;
@@ -44,6 +63,27 @@ function amqpCommand(ins, outs, config, cb) {
                     }
                 }
             }
+
+
+            if (!!config.deploymentType && options.vmDeploymentTypes.includes(config.deploymentType)
+                && connectionWrapper.url === executor_config.vm_amqp_url) {
+                console.log("VM DEPLOYMENT TYPE");
+            } else if ((!!config.deploymentType && options.lambdaDeploymentTypes.includes(config.deploymentType)
+                && connectionWrapper.url === executor_config.amqp_url) || !config.deploymentType) {
+                // process normally
+                console.log("LAMBDA DEPLOYMENT TYPE");
+            } else if (!config.deploymentType && connectionWrapper.url === executor_config.vm_amqp_url) {
+                console.log("VM DEPLOYMENT TYPE");
+            } else {
+                return;
+            }
+
+            if (connectionWrapper.url === executor_config.amqp_url) {
+                console.log("LAMBDA CONNECTION")
+            } else {
+                console.log("VN CONNECTION")
+            }
+
             const jobMessage = {
                 "executable": config.executor.executable,
                 "args": config.executor.args,
@@ -76,7 +116,7 @@ function amqpCommand(ins, outs, config, cb) {
 
             ok = ok.then(function (queue) {
                 taskCount += 1;
-                console.log("[AMQP][" + corrId + "][" + taskCount + "] Publishing job " + JSON.stringify(jobMessage));
+                //  console.log("[AMQP][" + corrId + "][" + taskCount + "] Publishing job " + JSON.stringify(jobMessage));
                 ch.sendToQueue('hyperflow.jobs', Buffer.from(JSON.stringify(jobMessage)), {
                     replyTo: queue,
                     contentType: 'application/json',
@@ -89,18 +129,33 @@ function amqpCommand(ins, outs, config, cb) {
                 const parsed = JSON.parse(message);
                 ch.close();
                 //   if (parsed.exit_status === "0") {
-                   console.log("[AMQP][" + corrId + "] Job finished! job[" + JSON.stringify(jobMessage) + "] msg[" + message + "]", outs);
+                // console.log("[AMQP][" + corrId + "] Job finished! job[" + JSON.stringify(jobMessage) + "] msg[" + message + "]", outs);
                 cb(null, outs);
                 //    } else {
+                if (JSON.stringify(jobMessage).executable === "mJPEG") {
+                    const end = Date.now();
+                    console.log("END: " + end);
+                    console.log(queueName);
+                }
                 //   console.log("[AMQP][" + corrId + "] Error during job execution! msg[" + JSON.stringify(jobMessage) + "] job[" + message + "] exception[" + parsed.exceptions + "]");
                 // process.exit(5);
                 //  cb(parsed.exceptions, outs);
                 // }
             });
         }))
-    }).then(null, function (err) {
+    };
+    connection.then(function (c) {
+        return Promise.resolve({conn: c, url: executor_config.amqp_url})
+    }).then(onFulfilled).then(null, function (err) {
         console.trace(err.stack);
     });
+    if (vmConnection) {
+        vmConnection.then(function (c) {
+            return Promise.resolve({conn: c, url: executor_config.vm_amqp_url})
+        }).then(onFulfilled).then(null, function (err) {
+            console.trace(err.stack);
+        });
+    }
 }
 
 
