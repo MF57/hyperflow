@@ -3,6 +3,8 @@ const executor_config = require('./config/awsLambdaCommand.config.js');
 
 function awsLambdaCommand(ins, outs, config, hyperflow_callback) {
 
+    const beginTime = new Date().getTime();
+
     function responseCallback(error, response, body) {
         console.log("Function: " + executable + " response status code: " + response.statusCode + " number of request attempts: " + response.attempts);
 
@@ -10,10 +12,21 @@ function awsLambdaCommand(ins, outs, config, hyperflow_callback) {
             console.log("Function: " + executable + " error: " + error);
             console.log(response.body.message);
             hyperflow_callback(error, outs);
+            process.exit(5);
             return
         }
         if (executor_config.options.verbose) {
             console.log("Function: " + executable + " data: " + body.toString());
+        }
+
+        if (executor_config.options.metrics) {
+            const endTime = new Date().getTime();
+            const fs = require('fs');
+
+            fs.appendFile('metrics.csv', executable + "," + beginTime + "," + endTime + "\n", function (err) {
+                if (err) throw err;
+            });
+
         }
         hyperflow_callback(null, outs);
     }
@@ -40,8 +53,6 @@ function awsLambdaCommand(ins, outs, config, hyperflow_callback) {
 
     if (executor_config.options.verbose) {
         console.log("Executing:  " + JSON.stringify(jobMessage));
-    } else {
-        console.log("Executing: " + executable);
     }
 
     function myRetryStrategy(err, response){

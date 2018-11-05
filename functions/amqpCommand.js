@@ -50,6 +50,8 @@ function amqpCommand(ins, outs, config, cb) {
                 }
             }
 
+            const beginTime = new Date().getTime();
+
             const jobMessage = {
                 "executable": config.executor.executable,
                 "args": config.executor.args,
@@ -104,6 +106,15 @@ function amqpCommand(ins, outs, config, cb) {
                         console.log("[AMQP][" + corrId + "] Job finished! job[" + JSON.stringify(jobMessage) + "] msg[" + message + "]", outs);
                     } else {
                         console.log("[AMQP][" + corrId + "] Successfully finished job " + config.executor.executable);
+                    }
+                    if (executor_config.options.metrics) {
+                        const endTime = new Date().getTime();
+                        const fs = require('fs');
+
+                        fs.appendFile('metrics.csv', config.executor.executable + "," + beginTime + "," + endTime + "\n", function (err) {
+                            if (err) throw err;
+                        });
+
                     }
                     cb(null, outs);
                 } else if (connectionsMap.map(c => c.url).indexOf(connectionWrapper.url) === 0) {
