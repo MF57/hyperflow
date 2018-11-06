@@ -30,8 +30,8 @@ exports.options = {
     "storage": "s3",
     "bucket": S3_BUCKET,
     "prefix": S3_PATH,
-    "verbose": false,
-    "metrics": true
+    "verbose": true/false,
+    "metrics": true/false
 };
 
 ```
@@ -45,7 +45,8 @@ exports.options = {
     "storage": "google",
     "bucket": GOOGLE_BUCKET,
     "prefix": GOOGLE_PATH,
-    "verbose": false
+    "verbose": true/false,
+    "metrics": true/false
 };
 
 ```
@@ -69,7 +70,8 @@ exports.options = {
     "workdir": "path", 
     "bucket": S3_BUCKET,
     "prefix": S3_PATH,
-    "verbose": true
+    "verbose": true/false,
+    "metrics": true/false
 };
 ```
 
